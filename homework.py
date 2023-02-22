@@ -63,7 +63,7 @@ def get_api_answer(timestamp):
         if response.status_code != HTTPStatus.OK:
             logger.error(f'Ошибка при запросе к API: {response.status_code}')
             raise StatusError(f'Ошибка при запросе к API: '
-                              '{response.status_code}')
+                              f'{response.status_code}')
         if not response.json():
             logger.error('Ошибка в получении json')
             raise ValueError('Ошибка в получении json')
