@@ -8,7 +8,7 @@ class NotListError(Exception):
     pass
 
 
-class StatusCodeUnknow(Exception):
+class StatusCodeUnknown(Exception):
     """Статус домашней работы неизвестен."""
     pass
 

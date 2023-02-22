@@ -8,7 +8,7 @@ import telegram
 from dotenv import load_dotenv
 
 from http import HTTPStatus
-from exceptions import (Error, NotListError, StatusCodeUnknow,
+from exceptions import (Error, NotListError, StatusCodeUnknown,
                         StatusError, StatusNotInDict)
 
 
@@ -32,8 +32,8 @@ HOMEWORK_VERDICTS = {
 
 logging.basicConfig(
     format='%(asctime)s, %(levelname)s, %(message)s',
-    level=logging.INFO,
-    level=logging.DEBUG
+    filename='program.log',
+    level=logging.INFO
 )
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ def check_tokens():
 def send_message(bot, message):
     """Делает запрос к эндпоитну  API-сервиса."""
     try:
-        bot.send_message(shat_id=TELEGRAM_CHAT_ID, text=message)
+        bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
     except Exception:
         logger.error('Сбой при отправке сообщения')
     else:
@@ -61,7 +61,7 @@ def get_api_answer(timestamp):
     try:
         response = requests.get(ENDPOINT, headers=HEADERS, params=params)
         if response.status_code != HTTPStatus.OK:
-            logger.errror(f'Ошибка при запросе к API: {response.status_code}')
+            logger.error(f'Ошибка при запросе к API: {response.status_code}')
             raise StatusError(f'Ошибка при запросе к API: {response.status_code}')
         if not response.json():
             logger.error('Ошибка в получении json')
@@ -98,7 +98,7 @@ def parse_status(homework):
     homework_status = homework.get('status')
     if homework_status not in HOMEWORK_VERDICTS:
         logger.error('Статус работы неизвестен')
-        raise StatusCodeUnknow('Статус работы неизвестен')
+        raise StatusCodeUnknown('Статус работы неизвестен')
     verdict = HOMEWORK_VERDICTS.get(homework_status)
     return f'Статус проверки работы изменился "{homework_name}". {verdict}'
 
@@ -107,24 +107,16 @@ def main():
     """Основная логика работы бота."""
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     timestamp = int(time.time())
-    homework_status = ''
-    get_api_answer = ''
-    if not check_tokens():
-        logger.critical('Ошибка переменных окружения')
-        raise Exception('Ошибка переменных окружения')
     while True:
         try:
             response = get_api_answer(timestamp)
-            message = parse_status(check_response(response))
-            if message != homework_status:
+            homeworks = check_response(response)
+            for homework in homeworks:
+                message = parse_status(homework)
                 send_message(bot, message)
-                homework_status = message
-                time.sleep(RETRY_PERIOD)
+            timestamp = response.get('current_date', timestamp)
         except Exception as error:
-            message = f'Сбой в работе программы: {error}'
-            if get_api_answer_error != message:
-                send_message(bot, message)
-                get_api_answer_error = message
+            logger.error(f'Ошибка: {error}')
         time.sleep(RETRY_PERIOD)
 
 
