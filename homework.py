@@ -4,11 +4,12 @@ import time
 import requests
 import logging
 import telegram
+import sys
 
 from dotenv import load_dotenv
 
 from http import HTTPStatus
-from exceptions import (Error, NotListError, StatusCodeUnknown,
+from exceptions import (Error, StatusCodeUnknown,
                         StatusError, StatusNotInDict)
 
 
@@ -47,6 +48,7 @@ def check_tokens():
 def send_message(bot, message):
     """Делает запрос к эндпоитну  API-сервиса."""
     try:
+        logger.debug("Сообщение успешно отправлено в Telegram.")
         bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
     except Exception:
         logger.error('Сбой при отправке сообщения')
@@ -84,7 +86,7 @@ def check_response(response):
     homeworks = response.get('homeworks')
     if not isinstance(homeworks, list):
         logger.error('Домашних работ нет')
-        raise NotListError('Домашних работ нет')
+        raise TypeError('Домашних работ нет')
     return homeworks
 
 
@@ -102,11 +104,15 @@ def parse_status(homework):
         logger.error('Статус работы неизвестен')
         raise StatusCodeUnknown('Статус работы неизвестен')
     verdict = HOMEWORK_VERDICTS.get(homework_status)
-    return f'Статус проверки работы изменился "{homework_name}". {verdict}'
+    return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 
 def main():
     """Основная логика работы бота."""
+    if not check_tokens():
+        logging.critical('Отсутствует необходимое кол-во'
+                         ' переменных окружения')
+        sys.exit('Отсутсвуют переменные окружения')
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     timestamp = int(time.time())
     while True:

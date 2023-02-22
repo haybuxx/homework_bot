@@ -3,11 +3,6 @@ class Error(Exception):
     pass
 
 
-class NotListError(Exception):
-    """Пустой список домашних работ."""
-    pass
-
-
 class StatusCodeUnknown(Exception):
     """Статус домашней работы неизвестен."""
     pass
