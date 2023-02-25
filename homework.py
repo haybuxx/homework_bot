@@ -67,10 +67,10 @@ def get_api_answer(timestamp: dict):
             logger.error(response_api)
             raise StatusError(response_api)
         return response.json()
-    except ErrorResponse as error:
-        error_response = f'Ошибка: {error}'
-        logger.error(error_response)
-        raise Exception(error_response)
+    except requests.RequestException as error:
+        request_exception = f'Ошибка при запросе к API: {error}'
+        logger.error(request_exception)
+        raise StatusError(request_exception)
 
 
 def check_response(response: dict):
