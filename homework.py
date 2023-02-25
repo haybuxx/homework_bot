@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 from http import HTTPStatus
 from exceptions import (StatusCodeUnknown, StatusError,
-                        StatusNotInDict, ErrorResponse)
+                        StatusNotInDict)
 from telegram.error import TelegramError
 from telegram import Bot
 
@@ -50,7 +50,7 @@ def send_message(bot: Bot, message: str) -> None:
     try:
         logger.debug("Фунция вызвана.")
         bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
-    except TelegramError as error:
+    except TelegramError:
         logger.error('Сбой при отправке сообщения')
     else:
         logger.info(f'Бот отправил сообщение: {message}')
