@@ -9,9 +9,10 @@ import sys
 from dotenv import load_dotenv
 
 from http import HTTPStatus
-from exceptions import (Error, StatusCodeUnknown,
-                        StatusError, StatusNotInDict)
-
+from exceptions import (StatusCodeUnknown, StatusError,
+                        StatusNotInDict, ErrorResponse)
+from telegram.error import TelegramError
+from telegram import Bot
 
 load_dotenv()
 
@@ -41,68 +42,75 @@ logger = logging.getLogger(__name__)
 
 def check_tokens():
     """Проверяет доступность переменных."""
-    token_all = [PRACTICUM_TOKEN, TELEGRAM_CHAT_ID, TELEGRAM_TOKEN]
-    return all(token_all)
+    return all([PRACTICUM_TOKEN, TELEGRAM_CHAT_ID, TELEGRAM_TOKEN])
 
 
-def send_message(bot, message):
+def send_message(bot: Bot, message: str) -> None:
     """Делает запрос к эндпоитну  API-сервиса."""
     try:
-        logger.debug("Сообщение успешно отправлено в Telegram.")
+        logger.debug("Фунция вызвана.")
         bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
-    except Exception:
+    except TelegramError as error:
         logger.error('Сбой при отправке сообщения')
     else:
         logger.info(f'Бот отправил сообщение: {message}')
 
 
-def get_api_answer(timestamp):
+def get_api_answer(timestamp: dict):
     """Делает запрос к эндпоинту API-сервиса."""
     timestamp = timestamp or int(time.time())
     params = {'from_date': timestamp}
     try:
         response = requests.get(ENDPOINT, headers=HEADERS, params=params)
         if response.status_code != HTTPStatus.OK:
-            logger.error(f'Ошибка при запросе к API: {response.status_code}')
-            raise StatusError(f'Ошибка при запросе к API: '
-                              f'{response.status_code}')
-        if not response.json():
-            logger.error('Ошибка в получении json')
-            raise ValueError('Ошибка в получении json')
+            response_api = f'Ошибка при запросе к API: {response.status_code}'
+            logger.error(response_api)
+            raise StatusError(response_api)
         return response.json()
-    except Exception as error:
-        logger.error(f'Ошибка: {error}')
-        raise Error(f'Ошибка: {error}')
+    except ErrorResponse as error:
+        error_response = f'Ошибка: {error}'
+        logger.error(error_response)
+        raise Exception(error_response)
 
 
-def check_response(response):
+def check_response(response: dict):
     """Проверка ответа API."""
-    if not isinstance(response, dict):
-        logger.error('Ответ API не словарь')
-        raise TypeError('Ответ API не словарь')
     if not response:
-        logger.error('Ответ API пустой словарь')
-        raise ValueError('Ответ API пустой словарь')
+        respone_nothing = 'Ответ API пустой словарь'
+        logger.error(respone_nothing)
+        raise ValueError(respone_nothing)
+    if not isinstance(response, dict):
+        response_not_dict = 'Ответ API не словарь'
+        logger.error(response_not_dict)
+        raise TypeError(response_not_dict)
     homeworks = response.get('homeworks')
+    if not homeworks:
+        not_homeworks = 'В ответе API нет ключа "homeworks"'
+        logger.error(not_homeworks)
+        raise ValueError(not_homeworks)
     if not isinstance(homeworks, list):
-        logger.error('Домашних работ нет')
-        raise TypeError('Домашних работ нет')
+        not_home_work = 'Домашних работ нет'
+        logger.error(not_home_work)
+        raise TypeError(not_home_work)
     return homeworks
 
 
-def parse_status(homework):
+def parse_status(homework: dict):
     """Получает статус домашней работы."""
     if 'homework_name' not in homework:
-        logger.error('В словаре нет ключа [homework_name]')
-        raise KeyError('В словаре нет ключа [homework_name]')
+        not_key_homework = 'В словаре нет ключа [homework_name]'
+        logger.error(not_key_homework)
+        raise KeyError(not_key_homework)
     if 'status' not in homework:
-        logger.error('В словаре нет ключа [status]')
-        raise StatusNotInDict('В словаре нет ключа [status]')
+        not_key_status = 'В словаре нет ключа [status]'
+        logger.error(not_key_status)
+        raise StatusNotInDict(not_key_status)
     homework_name = homework.get('homework_name')
     homework_status = homework.get('status')
     if homework_status not in HOMEWORK_VERDICTS:
-        logger.error('Статус работы неизвестен')
-        raise StatusCodeUnknown('Статус работы неизвестен')
+        status_work_unknown = 'Статус работы неизвестен'
+        logger.error(status_work_unknown)
+        raise StatusCodeUnknown(status_work_unknown)
     verdict = HOMEWORK_VERDICTS.get(homework_status)
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
@@ -110,8 +118,7 @@ def parse_status(homework):
 def main():
     """Основная логика работы бота."""
     if not check_tokens():
-        logging.critical('Отсутствует необходимое кол-во'
-                         ' переменных окружения')
+        logging.critical('Отсутствуют переменных окружения')
         sys.exit('Отсутсвуют переменные окружения')
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     timestamp = int(time.time())

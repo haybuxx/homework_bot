@@ -1,8 +1,3 @@
-class Error(Exception):
-    """Стандартный класс исключений."""
-    pass
-
-
 class StatusCodeUnknown(Exception):
     """Статус домашней работы неизвестен."""
     pass
@@ -16,3 +11,7 @@ class StatusError(Exception):
 class StatusNotInDict(Exception):
     """Отсутствие ключа в статусе."""
     pass
+
+
+class ErrorResponse(Exception):
+    """Ошибка в запросе к API."""
