@@ -13,6 +13,7 @@ from exceptions import (StatusCodeUnknown, StatusError,
                         StatusNotInDict)
 from telegram.error import TelegramError
 from telegram import Bot
+from typing import Any
 
 load_dotenv()
 
@@ -48,7 +49,7 @@ def check_tokens():
 def send_message(bot: Bot, message: str) -> None:
     """Делает запрос к эндпоитну  API-сервиса."""
     try:
-        logger.debug("Фунция вызвана.")
+        logger.debug("Начало отправки сообщения.")
         bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
     except TelegramError:
         logger.error('Сбой при отправке сообщения')
@@ -56,7 +57,7 @@ def send_message(bot: Bot, message: str) -> None:
         logger.info(f'Бот отправил сообщение: {message}')
 
 
-def get_api_answer(timestamp: dict):
+def get_api_answer(timestamp: int = None) -> Any:
     """Делает запрос к эндпоинту API-сервиса."""
     timestamp = timestamp or int(time.time())
     params = {'from_date': timestamp}
@@ -118,8 +119,9 @@ def parse_status(homework: dict):
 def main():
     """Основная логика работы бота."""
     if not check_tokens():
-        logging.critical('Отсутствуют переменных окружения')
-        sys.exit('Отсутсвуют переменные окружения')
+        erorr_text = 'Отсутствуют переменных окружения'
+        logging.critical(erorr_text)
+        sys.exit(erorr_text)
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     timestamp = int(time.time())
     while True:
